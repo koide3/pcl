@@ -48,6 +48,9 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 
 namespace pcl {
+
+enum NeighborSearchMethod { KDTREE, DIRECT26, DIRECT7, DIRECT1 };
+
 /** \brief A 3D Normal Distribution Transform registration implementation for point
  * cloud data. \note For more information please see <b>Magnusson, M. (2009). The
  * Three-Dimensional Normal-Distributions Transform — an Efﬁcient Representation for
@@ -61,8 +64,6 @@ namespace pcl {
 template <typename PointSource, typename PointTarget>
 class NormalDistributionsTransformOMP : public Registration<PointSource, PointTarget> {
 public:
-  enum NeighborSearchMethod { KDTREE, DIRECT26, DIRECT7, DIRECT1 };
-
 protected:
   using PointCloudSource = typename Registration<PointSource, PointTarget>::PointCloudSource;
   using PointCloudSourcePtr = typename PointCloudSource::Ptr;
