@@ -362,13 +362,41 @@ namespace pcl
       }
 
       /** \brief Get the voxels surrounding point p, not including the voxel containing point p.
-       * \note Only voxels containing a sufficient number of points are used (slower than radius search in practice).
+       * \note Only voxels containing a sufficient number of points are used.
+       * \param[in] relative coordinates of neighboring voxels
        * \param[in] reference_point the point to get the leaf structure at
        * \param[out] neighbors
        * \return number of neighbors found
        */
       int
-      getNeighborhoodAtPoint (const PointT& reference_point, std::vector<LeafConstPtr> &neighbors);
+      getNeighborhoodAtPoint (const Eigen::MatrixXi& relative_coordinates, const PointT& reference_point, std::vector<LeafConstPtr> &neighbors) const;
+
+      /** \brief Get the voxels surrounding point p, not including the voxel containing point p.
+       * \note Only voxels containing a sufficient number of points are used.
+       * \param[in] reference_point the point to get the leaf structure at
+       * \param[out] neighbors
+       * \return number of neighbors found
+       */
+      int
+      getNeighborhoodAtPoint (const PointT& reference_point, std::vector<LeafConstPtr> &neighbors) const;
+
+      /** \brief Get the voxel at p.
+       * \note Only voxels containing a sufficient number of points are used.
+       * \param[in] reference_point the point to get the leaf structure at
+       * \param[out] neighbors
+       * \return number of neighbors found
+       */
+      int
+      getVoxelAtPoint (const PointT& reference_point, std::vector<LeafConstPtr> &neighbors) const;
+
+      /** \brief Get the adjacent voxels of point p.
+       * \note Only voxels containing a sufficient number of points are used.
+       * \param[in] reference_point the point to get the leaf structure at
+       * \param[out] neighbors
+       * \return number of neighbors found
+       */
+      int
+      getAdjacentVoxelsAtPoint (const PointT& reference_point, std::vector<LeafConstPtr> &neighbors) const;
 
       /** \brief Get the leaf structure map
        * \return a map contataining all leaves
