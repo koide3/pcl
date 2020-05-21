@@ -43,9 +43,9 @@
 
 #include <pcl/registration/ndt_omp.h>
 
-namespace pcl {
+namespace pcl
+{
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget>
 NormalDistributionsTransformOMP<PointSource, PointTarget>::NormalDistributionsTransformOMP()
 : target_cells_()
@@ -60,7 +60,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::NormalDistributionsTr
 
   double gauss_c1, gauss_c2, gauss_d3;
 
-  // Initializes the guassian fitting parameters (eq. 6.8) [Magnusson 2009]
+  // Initializes the gaussian fitting parameters (eq. 6.8) [Magnusson 2009]
   gauss_c1 = 10.0 * (1 - outlier_ratio_);
   gauss_c2 = outlier_ratio_ / pow (resolution_, 3);
   gauss_d3 = -std::log (gauss_c2);
@@ -79,9 +79,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::NormalDistributionsTr
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename PointSource, typename PointTarget>
-void
+template<typename PointSource, typename PointTarget> void
 NormalDistributionsTransformOMP<PointSource, PointTarget>::computeTransformation(PointCloudSource& output, const Eigen::Matrix4f& guess)
 {
   nr_iterations_ = 0;
@@ -150,7 +148,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeTransformation
     p += delta_p;
 
     // Update Visualizer (untested)
-    if (update_visualizer_ != 0)
+    if (update_visualizer_)
       update_visualizer_(output, std::vector<int>(), *target_, std::vector<int>());
 
     double cos_angle = 0.5 * (transformation_.coeff (0, 0) + transformation_.coeff (1, 1) + transformation_.coeff (2, 2) - 1);
@@ -174,7 +172,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeTransformation
   trans_probability_ = score / static_cast<double>(input_->points.size());
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> double
 NormalDistributionsTransformOMP<PointSource, PointTarget>::computeDerivatives(
     Eigen::Matrix<double, 6, 1>& score_gradient,
@@ -221,11 +218,11 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeDerivatives(
     Eigen::Matrix3d c_inv;
 
     // Initialize Point Gradient and Hessian
-    Eigen::Matrix<float, 4, 6> point_gradient_;
-    Eigen::Matrix<float, 24, 6> point_hessian_;
-    point_gradient_.setZero();
-    point_gradient_.block<3, 3>(0, 0).setIdentity();
-    point_hessian_.setZero();
+    Eigen::Matrix<float, 4, 6> point_gradient;
+    Eigen::Matrix<float, 24, 6> point_hessian;
+    point_gradient.setZero();
+    point_gradient.block<3, 3>(0, 0).setIdentity();
+    point_hessian.setZero();
 
     x_trans_pt = trans_cloud.points[idx];
 
@@ -267,9 +264,9 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeDerivatives(
       c_inv = cell->getInverseCov();
 
       // Compute derivative of transform function w.r.t. transform vector, J_E and H_E in Equations 6.18 and 6.20 [Magnusson 2009]
-      computePointDerivatives(x, point_gradient_, point_hessian_);
+      computePointDerivatives(x, point_gradient, point_hessian);
       // Update score, gradient and hessian, lines 19-21 in Algorithm 2, according to Equations 6.10, 6.12 and 6.13, respectively [Magnusson 2009]
-      score_pt += updateDerivatives(score_gradient_pt, hessian_pt, point_gradient_, point_hessian_, x_trans, c_inv, compute_hessian);
+      score_pt += updateDerivatives(score_gradient_pt, hessian_pt, point_gradient, point_hessian, x_trans, c_inv, compute_hessian);
     }
 
     scores[thread_n] += score_pt;
@@ -287,7 +284,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeDerivatives(
   return (score);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> void
 NormalDistributionsTransformOMP<PointSource, PointTarget>::computeAngleDerivatives(Eigen::Matrix<double, 6, 1>& p, bool compute_hessian)
 {
@@ -389,7 +385,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeAngleDerivativ
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> void
 NormalDistributionsTransformOMP<PointSource, PointTarget>::computePointDerivatives(Eigen::Vector3d& x, Eigen::Matrix<float, 4, 6>& point_gradient, Eigen::Matrix<float, 24, 6>& point_hessian, bool compute_hessian) const
 {
@@ -474,7 +469,6 @@ pcl::NormalDistributionsTransformOMP<PointSource, PointTarget>::computePointDeri
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> double
 NormalDistributionsTransformOMP<PointSource, PointTarget>::updateDerivatives(
     Eigen::Matrix<double, 6, 1>& score_gradient,
@@ -517,8 +511,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateDerivatives(
 
     for (int i = 0; i < 6; i++) {
       // Sigma_k^-1 d(T(x,p))/dpi, Reusable portion of Equation 6.12 and 6.13 [Magnusson 2009] Update gradient, Equation 6.12 [Magnusson 2009]
-      x_trans4_dot_c_inv4_x_ext_point_hessian_4ij.noalias() =
-          x_trans4_x_c_inv4 * point_hessian.block<4, 6>(i * 4, 0);
+      x_trans4_dot_c_inv4_x_ext_point_hessian_4ij.noalias() = x_trans4_x_c_inv4 * point_hessian.block<4, 6>(i * 4, 0);
 
       for (int j = 0; j < hessian.cols(); j++) {
         // Update hessian, Equation 6.13 [Magnusson 2009]
@@ -533,7 +526,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateDerivatives(
   return (score_inc);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> void
 NormalDistributionsTransformOMP<PointSource, PointTarget>::computeHessian(
     Eigen::Matrix<double, 6, 6>& hessian,
@@ -561,7 +553,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeHessian(
   // Precompute Angular Derivatives unessisary because only used after regular derivative calculation
 
   // Update hessian for each point, line 17 in Algorithm 2 [Magnusson 2009]
-  for (size_t idx = 0; idx < input_->points.size(); idx++) {
+  for (std::size_t idx = 0; idx < input_->points.size(); idx++) {
     x_trans_pt = trans_cloud.points[idx];
 
     // Find nieghbors (Radius search has been experimentally faster than direct neighbor checking.
@@ -593,7 +585,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeHessian(
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> void
 NormalDistributionsTransformOMP<PointSource, PointTarget>::updateHessian(
     Eigen::Matrix<double, 6, 6>& hessian,
@@ -604,10 +595,10 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateHessian(
 {
   Eigen::Vector3d cov_dxd_pi;
   // e^(-d_2/2 * (x_k - mu_k)^T Sigma_k^-1 (x_k - mu_k)) Equation 6.9 [Magnusson 2009]
-  double e_x_cov_x = gauss_d2_ * exp(-gauss_d2_ * x_trans.dot(c_inv * x_trans) / 2);
+  double e_x_cov_x = gauss_d2_ * std::exp(-gauss_d2_ * x_trans.dot(c_inv * x_trans) / 2);
 
   // Error checking for invalid values.
-  if (e_x_cov_x > 1 || e_x_cov_x < 0 || e_x_cov_x != e_x_cov_x)
+  if (e_x_cov_x > 1 || e_x_cov_x < 0 || std::isnan(e_x_cov_x))
     return;
 
   // Reusable portion of Equation 6.12 and 6.13 [Magnusson 2009]
@@ -617,7 +608,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateHessian(
     // Sigma_k^-1 d(T(x,p))/dpi, Reusable portion of Equation 6.12 and 6.13 [Magnusson 2009]
     cov_dxd_pi = c_inv * point_gradient.col(i);
 
-    for (int j = 0; j < hessian.cols(); j++) {
+    for (Eigen::Index j = 0; j < hessian.cols(); j++) {
       // Update hessian, Equation 6.13 [Magnusson 2009]
       hessian(i, j) += e_x_cov_x * (-gauss_d2_ * x_trans.dot(cov_dxd_pi) *
                        x_trans.dot(c_inv * point_gradient.col(j)) +
@@ -627,7 +618,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateHessian(
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> bool
 NormalDistributionsTransformOMP<PointSource, PointTarget>::updateIntervalMT(
   double& a_l, double& f_l, double& g_l,
@@ -642,14 +632,14 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateIntervalMT(
     return (false);
   }
   // Case U2 in Update Algorithm and Case b in Modified Update Algorithm [More, Thuente 1994]
-  else if (g_t * (a_l - a_t) > 0) {
+  if (g_t * (a_l - a_t) > 0) {
     a_l = a_t;
     f_l = f_t;
     g_l = g_t;
     return (false);
   }
   // Case U3 in Update Algorithm and Case c in Modified Update Algorithm [More, Thuente 1994]
-  else if (g_t * (a_l - a_t) < 0) {
+  if (g_t * (a_l - a_t) < 0) {
     a_u = a_l;
     f_u = f_l;
     g_u = g_l;
@@ -663,7 +653,6 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::updateIntervalMT(
   return (true);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> double
 NormalDistributionsTransformOMP<PointSource, PointTarget>::trialValueSelectionMT(
     double a_l, double f_l, double g_l,
@@ -685,11 +674,10 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::trialValueSelectionMT
 
     if (std::fabs(a_c - a_l) < std::fabs(a_q - a_l))
       return (a_c);
-    else
-      return (0.5 * (a_q + a_c));
+    return (0.5 * (a_q + a_c));
   }
   // Case 2 in Trial Value Selection [More, Thuente 1994]
-  else if (g_t * g_l < 0) {
+  if (g_t * g_l < 0) {
     // Calculate the minimizer of the cubic that interpolates f_l, f_t, g_l and g_t
     // Equation 2.4.52 [Sun, Yuan 2006]
     double z = 3 * (f_t - f_l) / (a_t - a_l) - g_t - g_l;
@@ -703,11 +691,10 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::trialValueSelectionMT
 
     if (std::fabs(a_c - a_t) >= std::fabs(a_s - a_t))
       return (a_c);
-    else
-      return (a_s);
+    return (a_s);
   }
   // Case 3 in Trial Value Selection [More, Thuente 1994]
-  else if (std::fabs(g_t) <= std::fabs(g_l)) {
+  if (std::fabs(g_t) <= std::fabs(g_l)) {
     // Calculate the minimizer of the cubic that interpolates f_l, f_t, g_l and g_t
     // Equation 2.4.52 [Sun, Yuan 2006]
     double z = 3 * (f_t - f_l) / (a_t - a_l) - g_t - g_l;
@@ -727,21 +714,17 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::trialValueSelectionMT
 
     if (a_t > a_l)
       return (std::min(a_t + 0.66 * (a_u - a_t), a_t_next));
-    else
-      return (std::max(a_t + 0.66 * (a_u - a_t), a_t_next));
+    return (std::max(a_t + 0.66 * (a_u - a_t), a_t_next));
   }
   // Case 4 in Trial Value Selection [More, Thuente 1994]
-  else {
-    // Calculate the minimizer of the cubic that interpolates f_u, f_t, g_u and g_t
-    // Equation 2.4.52 [Sun, Yuan 2006]
-    double z = 3 * (f_t - f_u) / (a_t - a_u) - g_t - g_u;
-    double w = std::sqrt(z * z - g_t * g_u);
-    // Equation 2.4.56 [Sun, Yuan 2006]
-    return (a_u + (a_t - a_u) * (w - g_u - z) / (g_t - g_u + 2 * w));
-  }
+  // Calculate the minimizer of the cubic that interpolates f_u, f_t, g_u and g_t
+  // Equation 2.4.52 [Sun, Yuan 2006]
+  double z = 3 * (f_t - f_u) / (a_t - a_u) - g_t - g_u;
+  double w = std::sqrt(z * z - g_t * g_u);
+  // Equation 2.4.56 [Sun, Yuan 2006]
+  return (a_u + (a_t - a_u) * (w - g_u - z) / (g_t - g_u + 2 * w));
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget> double
 NormalDistributionsTransformOMP<PointSource, PointTarget>::computeStepLengthMT(
     const Eigen::Matrix<double, 6, 1>& x,
@@ -765,11 +748,9 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeStepLengthMT(
     // Not a decent direction
     if (d_phi_0 == 0)
       return 0;
-    else {
-      // Reverse step direction and calculate optimal step.
-      d_phi_0 *= -1;
-      step_dir *= -1;
-    }
+    // Reverse step direction and calculate optimal step.
+    d_phi_0 *= -1;
+    step_dir *= -1;
   }
 
   // The Search Algorithm for T(mu) [More, Thuente 1994]
@@ -785,8 +766,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeStepLengthMT(
   // Initial endpoints of Interval I,
   double a_l = 0, a_u = 0;
 
-  // Auxiliary function psi is used until I is determined ot be a closed interval,
-  // Equation 2.1 [More, Thuente 1994]
+  // Auxiliary function psi is used until I is determined ot be a closed interval, Equation 2.1 [More, Thuente 1994]
   double f_l = auxilaryFunction_PsiMT(a_l, phi_0, phi_0, d_phi_0, mu);
   double g_l = auxilaryFunction_dPsiMT(d_phi_0, d_phi_0, mu);
 
@@ -829,7 +809,7 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeStepLengthMT(
          !(psi_t <= 0 /*Sufficient Decrease*/ &&
          d_phi_t <= -nu * d_phi_0 /*Curvature Condition*/)) 
   {
-    // Use auxilary function if interval I is not closed
+    // Use auxiliary function if interval I is not closed
     if (open_interval) {
       a_t = trialValueSelectionMT(a_l, f_l, g_l, a_u, f_u, g_u, a_t, psi_t, d_psi_t);
     }
@@ -869,12 +849,12 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeStepLengthMT(
       open_interval = false;
 
       // Converts f_l and g_l from psi to phi
-      f_l = f_l + phi_0 - mu * d_phi_0 * a_l;
-      g_l = g_l + mu * d_phi_0;
+      f_l += phi_0 - mu * d_phi_0 * a_l;
+      g_l += mu * d_phi_0;
 
       // Converts f_u and g_u from psi to phi
-      f_u = f_u + phi_0 - mu * d_phi_0 * a_u;
-      g_u = g_u + mu * d_phi_0;
+      f_u += phi_0 - mu * d_phi_0 * a_u;
+      g_u += mu * d_phi_0;
     }
 
     if (open_interval) {
