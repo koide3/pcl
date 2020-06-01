@@ -61,7 +61,7 @@ namespace pcl
     * \author Brian Okorn (Space and Naval Warfare Systems Center Pacific)
     */
   template<typename PointSource, typename PointTarget>
-  class NormalDistributionsTransform : public Registration<PointSource, PointTarget>
+  class NormalDistributionsTransformOld : public Registration<PointSource, PointTarget>
   {
     protected:
 
@@ -87,18 +87,17 @@ namespace pcl
 
 
     public:
-
-      using Ptr = shared_ptr< NormalDistributionsTransform<PointSource, PointTarget> >;
-      using ConstPtr = shared_ptr< const NormalDistributionsTransform<PointSource, PointTarget> >;
+      using Ptr = shared_ptr<NormalDistributionsTransformOld<PointSource, PointTarget>>;
+      using ConstPtr = shared_ptr< const NormalDistributionsTransformOld<PointSource, PointTarget> >;
 
 
       /** \brief Constructor.
         * Sets \ref outlier_ratio_ to 0.35, \ref step_size_ to 0.05 and \ref resolution_ to 1.0
         */
-      NormalDistributionsTransform ();
-      
+      NormalDistributionsTransformOld();
+
       /** \brief Empty destructor */
-      ~NormalDistributionsTransform () {}
+      ~NormalDistributionsTransformOld() {}
 
       /** \brief Provide a pointer to the input target (e.g., the point cloud that we want to align the input source to).
         * \param[in] cloud the input point cloud target
@@ -121,9 +120,7 @@ namespace pcl
         {
           resolution_ = resolution;
           if (input_)
-          {
             init ();
-          }
         }
       }
 
@@ -133,7 +130,7 @@ namespace pcl
       inline float
       getResolution () const
       {
-        return resolution_;
+        return (resolution_);
       }
 
       /** \brief Get the newton line search maximum step length.
@@ -142,7 +139,7 @@ namespace pcl
       inline double
       getStepSize () const
       {
-        return step_size_;
+        return (step_size_);
       }
 
       /** \brief Set/change the newton line search maximum step length.
@@ -160,7 +157,7 @@ namespace pcl
       inline double
       getOulierRatio () const
       {
-        return outlier_ratio_;
+        return (outlier_ratio_);
       }
 
       /** \brief Set/change the point cloud outlier ratio.
@@ -178,7 +175,7 @@ namespace pcl
       inline double
       getTransformationProbability () const
       {
-        return trans_probability_;
+        return (trans_probability_);
       }
 
       /** \brief Get the number of iterations required to calculate alignment.
@@ -187,7 +184,7 @@ namespace pcl
       inline int
       getFinalNumIteration () const
       {
-        return nr_iterations_;
+        return (nr_iterations_);
       }
 
       /** \brief Convert 6 element transformation vector to affine transformation.
@@ -395,31 +392,33 @@ namespace pcl
         * \param[in] a the step length, \f$ \alpha \f$ in More-Thuente (1994)
         * \param[in] f_a function value at step length a, \f$ \phi(\alpha) \f$ in More-Thuente (1994)
         * \param[in] f_0 initial function value, \f$ \phi(0) \f$ in Moore-Thuente (1994)
-        * \param[in] g_0 initial function gradient, \f$ \phi'(0) \f$ in More-Thuente (1994)
+        * \param[in] g_0 initial function gradiant, \f$ \phi'(0) \f$ in More-Thuente (1994)
         * \param[in] mu the step length, constant \f$ \mu \f$ in Equation 1.1 [More, Thuente 1994]
         * \return sufficient decrease value
         */
       inline double
       auxilaryFunction_PsiMT (double a, double f_a, double f_0, double g_0, double mu = 1.e-4)
       {
-        return f_a - f_0 - mu * g_0 * a;
+        return (f_a - f_0 - mu * g_0 * a);
       }
 
       /** \brief Auxiliary function derivative used to determine endpoints of More-Thuente interval.
         * \note \f$ \psi'(\alpha) \f$, derivative of Equation 1.6 (Moore, Thuente 1994)
         * \param[in] g_a function gradient at step length a, \f$ \phi'(\alpha) \f$ in More-Thuente (1994)
-        * \param[in] g_0 initial function gradient, \f$ \phi'(0) \f$ in More-Thuente (1994)
+        * \param[in] g_0 initial function gradiant, \f$ \phi'(0) \f$ in More-Thuente (1994)
         * \param[in] mu the step length, constant \f$ \mu \f$ in Equation 1.1 [More, Thuente 1994]
         * \return sufficient decrease derivative
         */
       inline double
       auxilaryFunction_dPsiMT (double g_a, double g_0, double mu = 1.e-4)
       {
-        return g_a - mu * g_0;
+        return (g_a - mu * g_0);
       }
 
       /** \brief The voxel grid generated from target cloud containing point means and covariances. */
       TargetGrid target_cells_;
+
+      //double fitness_epsilon_;
 
       /** \brief The side length of voxels. */
       float resolution_;
@@ -440,13 +439,18 @@ namespace pcl
         *
         * The precomputed angular derivatives for the jacobian of a transformation vector, Equation 6.19 [Magnusson 2009]. 
         */
-      Eigen::Matrix<double, 8, 4> angular_jacobian_;
+      Eigen::Vector3d j_ang_a_, j_ang_b_, j_ang_c_, j_ang_d_, j_ang_e_, j_ang_f_, j_ang_g_, j_ang_h_;
 
       /** \brief Precomputed Angular Hessian
         *
         * The precomputed angular derivatives for the hessian of a transformation vector, Equation 6.19 [Magnusson 2009].
         */
-      Eigen::Matrix<double, 16, 4> angular_hessian_;
+      Eigen::Vector3d h_ang_a2_, h_ang_a3_,
+                      h_ang_b2_, h_ang_b3_,
+                      h_ang_c2_, h_ang_c3_,
+                      h_ang_d1_, h_ang_d2_, h_ang_d3_,
+                      h_ang_e1_, h_ang_e2_, h_ang_e3_,
+                      h_ang_f1_, h_ang_f2_, h_ang_f3_;
 
       /** \brief The first order derivative of the transformation of a point w.r.t. the transform vector, \f$ J_E \f$ in Equation 6.18 [Magnusson 2009]. */
       Eigen::Matrix<double, 3, 6> point_gradient_;
@@ -459,4 +463,4 @@ namespace pcl
   };
 }
 
-#include <pcl/registration/impl/ndt.hpp>
+#include <pcl/registration/impl/ndt_old.hpp>

@@ -37,16 +37,15 @@
  *
  */
 
-#ifndef PCL_NO_PRECOMPILE
 
 #include <pcl/point_types.h>
 #include <pcl/impl/instantiate.hpp>
 
-#include <pcl/registration/ndt.h>
-#include <pcl/registration/impl/ndt.hpp>
+#include <pcl/registration/ndt_old.h>
+#include <pcl/registration/impl/ndt_old.hpp>
 
-template class PCL_EXPORTS pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>;
-template class PCL_EXPORTS pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>;
-template class PCL_EXPORTS pcl::NormalDistributionsTransform<pcl::PointXYZRGB, pcl::PointXYZRGB>;
+template class PCL_EXPORTS pcl::NormalDistributionsTransformOld<pcl::PointXYZ, pcl::PointXYZ>;
+template class PCL_EXPORTS pcl::NormalDistributionsTransformOld<pcl::PointXYZI, pcl::PointXYZI>;
+template class PCL_EXPORTS pcl::NormalDistributionsTransformOld<pcl::PointXYZRGB, pcl::PointXYZRGB>;
+template class PCL_EXPORTS pcl::NormalDistributionsTransformOld<pcl::PointNormal, pcl::PointNormal>;
 
-#endif

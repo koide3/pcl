@@ -45,6 +45,7 @@ set(incs
   "include/pcl/${SUBSYS_NAME}/elch.h"
   "include/pcl/${SUBSYS_NAME}/meta_registration.h"
   "include/pcl/${SUBSYS_NAME}/ndt.h"
+  "include/pcl/${SUBSYS_NAME}/ndt_old.h"
   "include/pcl/${SUBSYS_NAME}/ndt_omp.h"
   "include/pcl/${SUBSYS_NAME}/ndt_2d.h"
   "include/pcl/${SUBSYS_NAME}/ppf_registration.h"
@@ -109,6 +110,7 @@ set(impl_incs
   "include/pcl/${SUBSYS_NAME}/impl/lum.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/meta_registration.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/ndt.hpp"
+  "include/pcl/${SUBSYS_NAME}/impl/ndt_old.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/ndt_omp.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/ndt_2d.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/ppf_registration.hpp"
@@ -161,6 +163,7 @@ set(srcs
   src/elch.cpp
   src/lum.cpp
   src/ndt.cpp
+  src/ndt_old.cpp
   src/ndt_omp.cpp
   src/ndt_2d.cpp
   src/transformation_estimation_2D.cpp
