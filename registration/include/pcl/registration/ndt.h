@@ -266,14 +266,14 @@ namespace pcl
         * \param[out] score_gradient the gradient vector of the probability function w.r.t. the transformation vector
         * \param[out] hessian the hessian matrix of the probability function w.r.t. the transformation vector
         * \param[in] trans_cloud transformed point cloud
-        * \param[in] p the current transform vector
+        * \param[in] transform the current transform vector
         * \param[in] compute_hessian flag to calculate hessian, unnessissary for step calculation.
         */
       double
       computeDerivatives (Eigen::Matrix<double, 6, 1> &score_gradient,
                           Eigen::Matrix<double, 6, 6> &hessian,
                           PointCloudSource &trans_cloud,
-                          Eigen::Matrix<double, 6, 1> &p,
+                          Eigen::Matrix<double, 6, 1> &transform,
                           bool compute_hessian = true);
 
       /** \brief Compute individual point contirbutions to derivatives of probability function w.r.t. the transformation vector.
@@ -292,11 +292,11 @@ namespace pcl
 
       /** \brief Precompute anglular components of derivatives.
         * \note Equation 6.19 and 6.21 [Magnusson 2009].
-        * \param[in] p the current transform vector
+        * \param[in] transform the current transform vector
         * \param[in] compute_hessian flag to calculate hessian, unnessissary for step calculation.
         */
       void
-      computeAngleDerivatives (Eigen::Matrix<double, 6, 1> &p, bool compute_hessian = true);
+      computeAngleDerivatives (Eigen::Matrix<double, 6, 1> &transform, bool compute_hessian = true);
 
       /** \brief Compute point derivatives.
         * \note Equation 6.18-21 [Magnusson 2009].
@@ -310,12 +310,10 @@ namespace pcl
         * \note Equation 6.13 [Magnusson 2009].
         * \param[out] hessian the hessian matrix of the probability function w.r.t. the transformation vector
         * \param[in] trans_cloud transformed point cloud
-        * \param[in] p the current transform vector
         */
       void
       computeHessian (Eigen::Matrix<double, 6, 6> &hessian,
-                      PointCloudSource &trans_cloud,
-                      Eigen::Matrix<double, 6, 1> &p);
+                      PointCloudSource &trans_cloud);
 
       /** \brief Compute individual point contirbutions to hessian of probability function w.r.t. the transformation vector.
         * \note Equation 6.13 [Magnusson 2009].
@@ -329,7 +327,7 @@ namespace pcl
 
       /** \brief Compute line search step length and update transform and probability derivatives using More-Thuente method.
         * \note Search Algorithm [More, Thuente 1994]
-        * \param[in] x initial transformation vector, \f$ x \f$ in Equation 1.3 (Moore, Thuente 1994) and \f$ \vec{p} \f$ in Algorithm 2 [Magnusson 2009]
+        * \param[in] transform initial transformation vector, \f$ x \f$ in Equation 1.3 (Moore, Thuente 1994) and \f$ \vec{p} \f$ in Algorithm 2 [Magnusson 2009]
         * \param[in] step_dir descent direction, \f$ p \f$ in Equation 1.3 (Moore, Thuente 1994) and \f$ \delta \vec{p} \f$ normalized in Algorithm 2 [Magnusson 2009]
         * \param[in] step_init initial step length estimate, \f$ \alpha_0 \f$ in Moore-Thuente (1994) and the noramal of \f$ \delta \vec{p} \f$ in Algorithm 2 [Magnusson 2009]
         * \param[in] step_max maximum step length, \f$ \alpha_max \f$ in Moore-Thuente (1994)
@@ -341,7 +339,7 @@ namespace pcl
         * \return final step length
         */
       double
-      computeStepLengthMT (const Eigen::Matrix<double, 6, 1> &x,
+      computeStepLengthMT (const Eigen::Matrix<double, 6, 1> &transform,
                            Eigen::Matrix<double, 6, 1> &step_dir,
                            double step_init,
                            double step_max, double step_min,
@@ -446,10 +444,10 @@ namespace pcl
         *
         * The precomputed angular derivatives for the hessian of a transformation vector, Equation 6.19 [Magnusson 2009].
         */
-      Eigen::Matrix<double, 16, 4> angular_hessian_;
+      Eigen::Matrix<double, 15, 4> angular_hessian_;
 
       /** \brief The first order derivative of the transformation of a point w.r.t. the transform vector, \f$ J_E \f$ in Equation 6.18 [Magnusson 2009]. */
-      Eigen::Matrix<double, 3, 6> point_gradient_;
+      Eigen::Matrix<double, 3, 6> point_jacobian_;
 
       /** \brief The second order derivative of the transformation of a point w.r.t. the transform vector, \f$ H_E \f$ in Equation 6.20 [Magnusson 2009]. */
       Eigen::Matrix<double, 18, 6> point_hessian_;

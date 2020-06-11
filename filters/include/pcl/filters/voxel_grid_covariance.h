@@ -488,7 +488,7 @@ namespace pcl
        */
       int
       radiusSearch (const PointT &point, double radius, std::vector<LeafConstPtr> &k_leaves,
-                    std::vector<float> &k_sqr_distances, unsigned int max_nn = 0)
+                    std::vector<float> &k_sqr_distances, unsigned int max_nn = 0) const
       {
         k_leaves.clear ();
 
@@ -507,7 +507,12 @@ namespace pcl
         k_leaves.reserve (k);
         for (const int &k_index : k_indices)
         {
-          k_leaves.push_back (&leaves_[voxel_centroids_leaf_indices_[k_index]]);
+          auto leaf = leaves_.find(voxel_centroids_leaf_indices_[k_index]);
+          if(leaf == leaves_.end()) {
+            PCL_WARN("could not find the leaf corresponding to the voxel");
+          } else {
+            k_leaves.push_back(&(leaf->second));
+          }
         }
         return k;
       }
@@ -525,7 +530,7 @@ namespace pcl
       inline int
       radiusSearch (const PointCloud &cloud, int index, double radius,
                     std::vector<LeafConstPtr> &k_leaves, std::vector<float> &k_sqr_distances,
-                    unsigned int max_nn = 0)
+                    unsigned int max_nn = 0) const
       {
         if (index >= static_cast<int> (cloud.points.size ()) || index < 0)
           return (0);
