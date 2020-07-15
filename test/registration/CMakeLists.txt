@@ -31,6 +31,11 @@ if(BUILD_io)
                LINK_WITH pcl_gtest pcl_io pcl_registration
                ARGUMENTS "${PCL_SOURCE_DIR}/test/bun0.pcd" "${PCL_SOURCE_DIR}/test/bun4.pcd")
 
+  PCL_ADD_TEST(ndt_omp test_ndt_omp
+               FILES test_ndt_omp.cpp
+               LINK_WITH pcl_gtest pcl_io pcl_registration
+               ARGUMENTS "${PCL_SOURCE_DIR}/test/bun0.pcd" "${PCL_SOURCE_DIR}/test/bun4.pcd")
+
   PCL_ADD_TEST(sac_ia test_sac_ia
                FILES test_sac_ia.cpp
                LINK_WITH pcl_gtest pcl_io pcl_registration
