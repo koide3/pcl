@@ -52,6 +52,7 @@ namespace pcl
 {
   enum class NeighborSearchMethod {
     KDTREE,
+    DIRECT27,
     DIRECT26,
     DIRECT7,
     DIRECT1

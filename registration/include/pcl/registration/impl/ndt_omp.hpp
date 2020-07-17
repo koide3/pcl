@@ -205,6 +205,9 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeDerivatives (E
       case NeighborSearchMethod::KDTREE:
         target_cells_.radiusSearch(x_trans_pt, resolution_, neighborhood, distances);
         break;
+      case NeighborSearchMethod::DIRECT27:
+        target_cells_.getAllNeighborsAtPoint(x_trans_pt, neighborhood);
+        break;
       case NeighborSearchMethod::DIRECT26:
         target_cells_.getNeighborhoodAtPoint(x_trans_pt, neighborhood);
         break;
@@ -447,6 +450,9 @@ NormalDistributionsTransformOMP<PointSource, PointTarget>::computeHessian (Eigen
     switch (search_method_) {
       case NeighborSearchMethod::KDTREE:
         target_cells_.radiusSearch(x_trans_pt, resolution_, neighborhood, distances);
+        break;
+      case NeighborSearchMethod::DIRECT27:
+        target_cells_.getAllNeighborsAtPoint(x_trans_pt, neighborhood);
         break;
       case NeighborSearchMethod::DIRECT26:
         target_cells_.getNeighborhoodAtPoint(x_trans_pt, neighborhood);

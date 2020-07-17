@@ -8,11 +8,6 @@
 #include <pcl/registration/ndt_omp.h>
 #include <pcl/filters/approximate_voxel_grid.h>
 
-#include <pclomp/ndt_omp.h>
-#include <pclomp/ndt_omp_impl.hpp>
-#include <pclomp/voxel_grid_covariance_omp.h>
-#include <pclomp/voxel_grid_covariance_omp_impl.hpp>
-
 
 pcl::PointCloud<pcl::PointXYZ>::ConstPtr read_kitti_pointcloud(const std::string& filename) {
   FILE* file = fopen(filename.c_str(), "rb");
@@ -39,49 +34,36 @@ pcl::PointCloud<pcl::PointXYZ>::ConstPtr read_kitti_pointcloud(const std::string
   return cloud;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::ConstPtr downsample(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& cloud, double resolution) {
-  pcl::ApproximateVoxelGrid<pcl::PointXYZ> voxelgrid;
-  voxelgrid.setLeafSize(resolution, resolution, resolution);
-
-  pcl::PointCloud<pcl::PointXYZ>::Ptr filtered(new pcl::PointCloud<pcl::PointXYZ>);
-  voxelgrid.setInputCloud(cloud);
-  voxelgrid.filter(*filtered);
-
-  return filtered;
-}
-
-void run_kitti(const std::vector<pcl::PointCloud<pcl::PointXYZ>::ConstPtr>& kitti_clouds, pcl::Registration<pcl::PointXYZ, pcl::PointXYZ>& reg, const std::string& method_name) {
+void run_kitti(const std::vector<pcl::PointCloud<pcl::PointXYZ>::ConstPtr>& clouds, pcl::Registration<pcl::PointXYZ, pcl::PointXYZ>& reg, const std::string& method_name) {
   std::vector<double> times;
-  times.reserve(kitti_clouds.size());
+  times.reserve(clouds.size());
 
-  std::cout << kitti_clouds.size() << std::endl;
-  std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> poses(kitti_clouds.size());
+  std::cout << clouds.size() << std::endl;
+  std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> poses(clouds.size());
   poses[0].setIdentity();
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr aligned(new pcl::PointCloud<pcl::PointXYZ>);
 
-  for(int i=1; i < kitti_clouds.size(); i++) {
-    std::cout << kitti_clouds[i - 1]->size() << " " << kitti_clouds[i]->size() << std::endl;
-
+  for(int i=1; i < clouds.size(); i++) {
     auto t1 = std::chrono::high_resolution_clock::now();
-    reg.setInputTarget(kitti_clouds[i - 1]);
-    reg.setInputSource(kitti_clouds[i]);
+    reg.setInputTarget(clouds[i - 1]);
+    reg.setInputSource(clouds[i]);
     reg.align(*aligned);
     auto t2 = std::chrono::high_resolution_clock::now();
 
     times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1e9);
     poses[i] = poses[i - 1] * reg.getFinalTransformation();
 
-    std::cout << i << "/" << kitti_clouds.size() << " : " << times.back() * 1e3 << "[msec]" << std::endl;
+    std::cout << i << "/" << clouds.size() << " : " << times.back() * 1e3 << "[msec]" << std::endl;
   }
 
 
-  std::ofstream times_ofs("/tmp/" + method_name + "_times.csv");
+  std::ofstream times_ofs("/home/koide/ndt_benchmark/" + method_name + "_times.csv");
   for(auto t: times) {
     times_ofs << t << std::endl;
   }
 
-  std::ofstream poses_ofs("/tmp/" + method_name + "_poses.csv");
+  std::ofstream poses_ofs("/home/koide/ndt_benchmark/" + method_name + "_poses.csv");
   for(const auto& pose: poses) {
     for(int i=0; i<3; i++) {
       for(int j=0; j<4; j++) {
@@ -113,27 +95,63 @@ main (int argc, char** argv)
   }
 
   std::sort(filenames.begin(), filenames.end());
-  filenames.erase(filenames.begin() + 512, filenames.end());
+  // filenames.erase(filenames.begin() + 1024, filenames.end());
 
-  std::vector<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> kitti_clouds;
+  std::vector<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> clouds;
   for(const auto& filename: filenames) {
-    kitti_clouds.push_back(read_kitti_pointcloud(filename));
+    clouds.push_back(read_kitti_pointcloud(filename));
   }
 
   std::cout << "downsampling..." << std::endl;
-  // #pragma omp parallel for
-  for(int i=0; i<kitti_clouds.size(); i++) {
-    auto downsampled = downsample(kitti_clouds[i], 0.25);
-    kitti_clouds[i] = downsampled;
-  }
-  std::cout << kitti_clouds[0]->size() << " " << kitti_clouds[1]->size() << std::endl;
+  #pragma omp parallel for
+  for(int i=0; i<clouds.size(); i++) {
+    double resolution = 0.25;
+    pcl::ApproximateVoxelGrid<pcl::PointXYZ> voxelgrid;
+    voxelgrid.setLeafSize(resolution, resolution, resolution);
 
-  pcl::NormalDistributionsTransformOMP<pcl::PointXYZ, pcl::PointXYZ> ndt;
-  ndt.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT7);
-  // ndt.setNeighborhoodSearchMethod(pclomp::DIRECT7);
-  ndt.setResolution(2.0);
-  ndt.setTransformationEpsilon(1e-3);
-  run_kitti(kitti_clouds, ndt, "ndt_omp_kdtree");
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered(new pcl::PointCloud<pcl::PointXYZ>);
+    voxelgrid.setInputCloud(clouds[i]);
+    voxelgrid.filter(*filtered);
+
+    clouds[i] = filtered;
+  }
+
+  double ndt_resolution = 2.0;
+  double translation_epsilon = 1e-3;
+
+  pcl::NormalDistributionsTransformOMP<pcl::PointXYZ, pcl::PointXYZ> ndt_omp;
+  ndt_omp.setResolution(ndt_resolution);
+  ndt_omp.setTransformationEpsilon(translation_epsilon);
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT27);
+  run_kitti(clouds, ndt_omp, "ndt_omp_direct27");
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT26);
+  run_kitti(clouds, ndt_omp, "ndt_omp_direct26");
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT7);
+  run_kitti(clouds, ndt_omp, "ndt_omp_direct7");
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT1);
+  run_kitti(clouds, ndt_omp, "ndt_omp_direct1");
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::KDTREE);
+  run_kitti(clouds, ndt_omp, "ndt_omp_kdtree");
+
+  ndt_omp.setNumThreads(1);
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT7);
+  run_kitti(clouds, ndt_omp, "ndt_omp_direct7_st");
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::DIRECT1);
+  run_kitti(clouds, ndt_omp, "ndt_omp_direct1_st");
+
+  ndt_omp.setNeighborSearchMethod(pcl::NeighborSearchMethod::KDTREE);
+  run_kitti(clouds, ndt_omp, "ndt_omp_kdtree_st");
+
+  pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
+  ndt.setTransformationEpsilon(translation_epsilon);
+  ndt.setResolution(ndt_resolution);
+  run_kitti(clouds, ndt, "ndt_original");
 
   std::cout << "done" << std::endl;
 
