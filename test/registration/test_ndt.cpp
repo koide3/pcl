@@ -82,7 +82,7 @@ TEST (PCL, NormalDistributionsTransform_Validation)
     std::cerr.rdbuf(reg_err_ofs.rdbuf());
 
     NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
-    ndt.setTransformationEpsilon(1e-5);
+    ndt.setTransformationEpsilon(1e-9);
     ndt.setMaximumIterations(50);
     ndt.setNeighborSearchMethod(NeighborSearchMethod::KDTREE);
     ndt.setResolution(1.0);
@@ -108,7 +108,7 @@ TEST (PCL, NormalDistributionsTransform_Validation)
     std::cerr.rdbuf(reg_err_ofs.rdbuf());
 
     NormalDistributionsTransformOld<pcl::PointXYZ, pcl::PointXYZ> ndt;
-    ndt.setTransformationEpsilon(1e-5);
+    ndt.setTransformationEpsilon(1e-9);
     ndt.setMaximumIterations(50);
     ndt.setResolution(1.0);
     ndt.setInputTarget(target);
@@ -132,6 +132,7 @@ TEST (PCL, NormalDistributionsTransform_Validation)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST (PCL, NormalDistributionsTransform_Benchmark)
 {
+  return;
   pcl::PointCloud<pcl::PointXYZ>::Ptr target(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr source(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::io::loadPCDFile("/home/koide/catkin_ws/src/fast_gicp/data/251370668.pcd", *target);
