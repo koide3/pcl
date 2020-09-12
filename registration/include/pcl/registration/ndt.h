@@ -53,7 +53,7 @@ namespace pcl
    *       DIRECT1 uses the voxel, which the point fell into (up to 1 voxel per point). This makes registration extremely fast but a bit unstable in particular when the initial guess is not accurate.
    *       DIRECT7 uses the voxel at the point and its facing voxels (up to 7 voxels per point). This strikes a good balance between registration stability and speed in a typical use case.
    *       DIRECT27 uses the voxel at the point and its 3x3x3 neighboring voxels (up to 27 voxels per point).
-   *       KDTREE uses a kdtree search (radius = voxel resolution) to find neighbor voxels. With this method, the registration result will be identical to the result of the orginal NDT implementation.
+   *       KDTREE uses a kdtree search (radius = voxel resolution) to find neighbor voxels. With this method, the registration result will be identical to the result of the implementation before PCL1.1.1.
    */
   enum class NeighborSearchMethod {
     KDTREE,
@@ -240,16 +240,12 @@ namespace pcl
         * \param nr_threads the number of hardware threads to use (0 sets the value back to automatic)
         */
       void setNumberOfThreads(unsigned int nr_threads = 0) {
-        if (nr_threads == 0) {
-        #ifdef _OPENMP
-          num_threads_ = omp_get_num_procs();
-        #else
-          num_threads_ = 1;
-        #endif
-        }
-        else {
-          num_threads_ = nr_threads;
-        }
+ #ifdef _OPENMP
+        num_threads_ = nr_threads ? nr_threads : omp_get_num_procs();
+#else
+        PCL_DEBUG("OpenMP is not available. Keeping number of threads unchanged at 1");
+        num_threads_ = 1;
+#endif
       }
 
     protected:
@@ -321,6 +317,21 @@ namespace pcl
         * \param[in] c_inv covariance of occupied covariance voxel
         * \param[in] compute_hessian flag to calculate hessian, unnessissary for step calculation.
         */
+      PCL_DEPRECATED(1, 15, "Thread-unsafe `updateDerivatives` is deprecated")
+      double
+      updateDerivatives (Eigen::Matrix<double, 6, 1> &score_gradient,
+                         Eigen::Matrix<double, 6, 6> &hessian,
+                         const Eigen::Vector3d &x_trans, const Eigen::Matrix3d &c_inv,
+                         bool compute_hessian = true) const;
+
+      /** \brief Compute individual point contirbutions to derivatives of probability function w.r.t. the transformation vector.
+        * \note Equation 6.10, 6.12 and 6.13 [Magnusson 2009].
+        * \param[in,out] score_gradient the gradient vector of the probability function w.r.t. the transformation vector
+        * \param[in,out] hessian the hessian matrix of the probability function w.r.t. the transformation vector
+        * \param[in] x_trans transformed point minus mean of occupied covariance voxel
+        * \param[in] c_inv covariance of occupied covariance voxel
+        * \param[in] compute_hessian flag to calculate hessian, unnessissary for step calculation.
+        */
       double
       updateDerivatives (Eigen::Matrix<double, 6, 1> &score_gradient,
                          Eigen::Matrix<double, 6, 6> &hessian,
@@ -336,6 +347,15 @@ namespace pcl
         */
       void
       computeAngleDerivatives (const Eigen::Matrix<double, 6, 1> &transform, bool compute_hessian = true);
+
+      /** \brief Compute point derivatives.
+        * \note Equation 6.18-21 [Magnusson 2009].
+        * \param[in] x point from the input cloud
+        * \param[in] compute_hessian flag to calculate hessian, unnessissary for step calculation.
+        */
+      PCL_DEPRECATED(1, 15, "Thread-unsafe `computePointDerivatives` is deprecated")
+      void
+      computePointDerivatives (const Eigen::Vector3d &x, bool compute_hessian = true);
 
       /** \brief Compute point derivatives.
         * \note Equation 6.18-21 [Magnusson 2009].
@@ -369,6 +389,17 @@ namespace pcl
         pcl::utils::ignore(transform);
         computeHessian(hessian, trans_cloud);
       }
+
+      /** \brief Compute individual point contirbutions to hessian of probability function w.r.t. the transformation vector.
+        * \note Equation 6.13 [Magnusson 2009].
+        * \param[in,out] hessian the hessian matrix of the probability function w.r.t. the transformation vector
+        * \param[in] x_trans transformed point minus mean of occupied covariance voxel
+        * \param[in] c_inv covariance of occupied covariance voxel
+        */
+      PCL_DEPRECATED(1, 15, "Thread-unsafe `updateHessian` is deprecated")
+      void
+      updateHessian (Eigen::Matrix<double, 6, 6> &hessian,
+                     const Eigen::Vector3d &x_trans, const Eigen::Matrix3d &c_inv) const;
 
       /** \brief Compute individual point contirbutions to hessian of probability function w.r.t. the transformation vector.
         * \note Equation 6.13 [Magnusson 2009].
@@ -502,6 +533,14 @@ namespace pcl
         * The precomputed angular derivatives for the hessian of a transformation vector, Equation 6.19 [Magnusson 2009].
         */
       Eigen::Matrix<float, 16, 4> angular_hessian_;
+
+      /** \brief The first order derivative of the transformation of a point w.r.t. the transform vector, \f$ J_E \f$ in Equation 6.18 [Magnusson 2009]. */
+      PCL_DEPRECATED(1, 15, "Parameter `point_jacobian_` is no longer used")
+      Eigen::Matrix<double, 3, 6> point_jacobian_;
+
+      /** \brief The second order derivative of the transformation of a point w.r.t. the transform vector, \f$ H_E \f$ in Equation 6.20 [Magnusson 2009]. */
+      PCL_DEPRECATED(1, 15, "Parameter `point_hessian_` is no longer used")
+      Eigen::Matrix<double, 18, 6> point_hessian_;
 
       /** \brief The number of threads the scheduler should use. */
       int num_threads_;
