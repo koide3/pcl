@@ -67,7 +67,7 @@ NormalDistributionsTransform<PointSource, PointTarget>::NormalDistributionsTrans
   transformation_epsilon_ = 0.1;
   max_iterations_ = 35;
 
-  setNumberOfThreads(0);
+  setNumberOfThreads(1);
   search_method_ = NeighborSearchMethod::DIRECT7;
 }
 
@@ -167,14 +167,9 @@ NormalDistributionsTransform<PointSource, PointTarget>::computeDerivatives (Eige
                                                                             const Eigen::Matrix<double, 6, 1> &transform,
                                                                             bool compute_hessian)
 {
-  std::vector<double> scores(num_threads_);
-  std::vector<Eigen::Matrix<double, 6, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, 6, 1>>> score_gradients(num_threads_);
-  std::vector<Eigen::Matrix<double, 6, 6>, Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>> hessians(num_threads_);
-  for (int i = 0; i < num_threads_; i++) {
-    scores[i] = 0;
-    score_gradients[i].setZero();
-    hessians[i].setZero();
-  }
+  std::vector<double> scores(num_threads_, 0.0);
+  std::vector<Eigen::Matrix<double, 6, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, 6, 1>>> score_gradients(num_threads_, Eigen::Matrix<double, 6, 1>::Zero().eval());
+  std::vector<Eigen::Matrix<double, 6, 6>, Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>> hessians(num_threads_, Eigen::Matrix<double, 6, 6>::Zero().eval());
 
   // Precompute Angular Derivatives (eq. 6.19 and 6.21)[Magnusson 2009]
   computeAngleDerivatives (transform);
@@ -187,11 +182,9 @@ NormalDistributionsTransform<PointSource, PointTarget>::computeDerivatives (Eige
     const auto& x_trans_pt = trans_cloud[idx];
 
     // Initialize Point Jacobian and Hessian
-    Eigen::Matrix<float, 4, 6> point_jacobian;
-    Eigen::Matrix<float, 24, 6> point_hessian;
-    point_jacobian.setZero();
+    Eigen::Matrix<float, 4, 6> point_jacobian = Eigen::Matrix<float, 4, 6>::Zero();
+    Eigen::Matrix<float, 24, 6> point_hessian = Eigen::Matrix<float, 24, 6>::Zero();
     point_jacobian.block<3, 3>(0, 0).setIdentity();
-    point_hessian.setZero();
 
     // Find neighbors (Radius search has been experimentally faster than direct neighbor checking.
     std::vector<TargetGridLeafConstPtr> neighborhood;
@@ -244,14 +237,9 @@ NormalDistributionsTransform<PointSource, PointTarget>::computeDerivatives (Eige
     hessians[thread_idx].noalias() += hessian_pt;
   }
 
-  double score = 0;
-  score_gradient.setZero ();
-  hessian.setZero ();
-  for(std::size_t i = 0; i < num_threads_; i++) {
-    score += scores[i];
-    score_gradient += score_gradients[i];
-    hessian += hessians[i];
-  }
+  double score = std::accumulate(scores.begin(), scores.end(), 0.0);
+  score_gradient = std::accumulate(score_gradients.begin(), score_gradients.end(), Eigen::Matrix<double, 6, 1>::Zero().eval());
+  hessian = std::accumulate(hessians.begin(), hessians.end(), Eigen::Matrix<double, 6, 6>::Zero().eval());
 
   return score;
 }
@@ -399,12 +387,12 @@ NormalDistributionsTransform<PointSource, PointTarget>::updateDerivatives (Eigen
     Eigen::Matrix<float, 6, 6> dxd_cov_dxd_pi = point_jacobian.transpose() * cov_dxd_pi;
     Eigen::Matrix<float, 6, 1> x_trans_c_inv_hessian_ij;
 
-    for (int i = 0; i < 6; i++) {
+    for (Eigen::Index i = 0; i < 6; i++) {
       // Sigma_k^-1 d(T(x,p))/dpi, Reusable portion of Equation 6.12 and 6.13 [Magnusson 2009]
       // Update gradient, Equation 6.12 [Magnusson 2009]
       x_trans_c_inv_hessian_ij.noalias() = x_trans_c_inv * point_hessian.block<4, 6>(i * 4, 0);
 
-      for (int j = 0; j < hessian.cols(); j++) {
+      for (Eigen::Index j = 0; j < hessian.cols(); j++) {
         // Update hessian, Equation 6.13 [Magnusson 2009]
         hessian(i, j) += e_x_cov_x * (-gauss_d2_ * x_cov_dxd_pi(i) * x_cov_dxd_pi(j) +
                                   x_trans_c_inv_hessian_ij(j) +
@@ -421,10 +409,7 @@ template<typename PointSource, typename PointTarget> void
 NormalDistributionsTransform<PointSource, PointTarget>::computeHessian (Eigen::Matrix<double, 6, 6> &hessian,
                                                                         const PointCloudSource &trans_cloud) const
 {
-  std::vector<Eigen::Matrix<double, 6, 6>, Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>> hessians (num_threads_);
-  for(size_t i = 0; i < num_threads_; i++) {
-    hessians[i].setZero();
-  }
+  std::vector<Eigen::Matrix<double, 6, 6>, Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>> hessians (num_threads_, Eigen::Matrix<double, 6, 6>::Zero());
 
   // Precompute Angular Derivatives unessisary because only used after regular derivative calculation
   // Update hessian for each point, line 17 in Algorithm 2 [Magnusson 2009]
@@ -434,11 +419,9 @@ NormalDistributionsTransform<PointSource, PointTarget>::computeHessian (Eigen::M
   // #pragma omp parallel for num_threads(num_threads_) schedule(guided, 8)
   for (std::size_t idx = 0; idx < input_->size (); idx++)
   {
-    Eigen::Matrix<float, 4, 6> point_jacobian;
-    Eigen::Matrix<float, 24, 6> point_hessian;
-    point_jacobian.setZero();
+    Eigen::Matrix<float, 4, 6> point_jacobian = Eigen::Matrix<float, 4, 6>::Zero();
+    Eigen::Matrix<float, 24, 6> point_hessian = Eigen::Matrix<float, 24, 6>::Zero();
     point_jacobian.block<3, 3>(0, 0).setIdentity();
-    point_hessian.setZero();
 
     Eigen::Matrix<double, 6, 6> pt_hessian = Eigen::Matrix<double, 6, 6>::Zero();
   
@@ -493,10 +476,7 @@ NormalDistributionsTransform<PointSource, PointTarget>::computeHessian (Eigen::M
     hessians[thread_idx] += pt_hessian;
   }
 
-  hessian.setZero();
-  for (std::size_t idx = 0; idx < num_threads_; idx++) {
-    hessian += hessians[idx];
-  }
+  hessian = std::accumulate(hessians.begin(), hessians.end(), Eigen::Matrix<double, 6, 6>::Zero().eval());
 }
 
 
