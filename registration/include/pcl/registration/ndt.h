@@ -335,8 +335,8 @@ namespace pcl
       double
       updateDerivatives (Eigen::Matrix<double, 6, 1> &score_gradient,
                          Eigen::Matrix<double, 6, 6> &hessian,
-                         const Eigen::Matrix<float, 4, 6>& point_gradient,
-                         const Eigen::Matrix<float, 24, 6>& point_hessian,
+                         const Eigen::Matrix<double, 4, 6>& point_gradient,
+                         const Eigen::Matrix<double, 24, 6>& point_hessian,
                          const Eigen::Vector3d &x_trans, const Eigen::Matrix3d &c_inv,
                          bool compute_hessian = true) const;
 
@@ -363,7 +363,7 @@ namespace pcl
         * \param[in] compute_hessian flag to calculate hessian, unnessissary for step calculation.
         */
       void
-      computePointDerivatives (const Eigen::Vector3d &x, Eigen::Matrix<float, 4, 6>& point_gradient, Eigen::Matrix<float, 24, 6>& point_hessian, bool compute_hessian = true) const;
+      computePointDerivatives (const Eigen::Vector3d &x, Eigen::Matrix<double, 4, 6>& point_gradient, Eigen::Matrix<double, 24, 6>& point_hessian, bool compute_hessian = true) const;
 
       /** \brief Compute hessian of probability function w.r.t. the transformation vector.
         * \note Equation 6.13 [Magnusson 2009].
@@ -396,6 +396,7 @@ namespace pcl
         * \param[in] x_trans transformed point minus mean of occupied covariance voxel
         * \param[in] c_inv covariance of occupied covariance voxel
         */
+      
       PCL_DEPRECATED(1, 15, "Thread-unsafe `updateHessian` is deprecated")
       void
       updateHessian (Eigen::Matrix<double, 6, 6> &hessian,
@@ -409,8 +410,8 @@ namespace pcl
         */
       void
       updateHessian (Eigen::Matrix<double, 6, 6> &hessian,
-                     const Eigen::Matrix<double, 3, 6>& point_jacobian,
-                     const Eigen::Matrix<double, 18, 6>& point_hessian,
+                     const Eigen::Matrix<double, 4, 6>& point_jacobian,
+                     const Eigen::Matrix<double, 24, 6>& point_hessian,
                      const Eigen::Vector3d &x_trans, const Eigen::Matrix3d &c_inv) const;
 
       /** \brief Compute line search step length and update transform and probability derivatives using More-Thuente method.
@@ -526,13 +527,13 @@ namespace pcl
         *
         * The precomputed angular derivatives for the jacobian of a transformation vector, Equation 6.19 [Magnusson 2009]. 
         */
-      Eigen::Matrix<float, 8, 4> angular_jacobian_;
+      Eigen::Matrix<double, 8, 4> angular_jacobian_;
 
       /** \brief Precomputed Angular Hessian
         *
         * The precomputed angular derivatives for the hessian of a transformation vector, Equation 6.19 [Magnusson 2009].
         */
-      Eigen::Matrix<float, 16, 4> angular_hessian_;
+      Eigen::Matrix<double, 15, 4> angular_hessian_;
 
       /** \brief The first order derivative of the transformation of a point w.r.t. the transform vector, \f$ J_E \f$ in Equation 6.18 [Magnusson 2009]. */
       PCL_DEPRECATED(1, 15, "Parameter `point_jacobian_` is no longer used")
