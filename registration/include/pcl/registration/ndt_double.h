@@ -47,22 +47,7 @@
 
 namespace pcl
 {
-  /**
-   * \brief Method to find neighbor voxels around a point
-   * \note This offers a tradeoff between stability and registration speed.
-   *       DIRECT1 uses the voxel, which the point fell into (up to 1 voxel per point). This makes registration extremely fast but a bit unstable in particular when the initial guess is not accurate.
-   *       DIRECT7 uses the voxel at the point and its facing voxels (up to 7 voxels per point). This strikes a good balance between registration stability and speed in a typical use case.
-   *       DIRECT27 uses the voxel at the point and its 3x3x3 neighboring voxels (up to 27 voxels per point).
-   *       KDTREE uses a kdtree search (radius = voxel resolution) to find neighbor voxels. With this method, the registration result will be identical to the result of the implementation before PCL1.1.1.
-   */
-  enum class NeighborSearchMethod {
-    KDTREE,
-    DIRECT27,
-    DIRECT7,
-    DIRECT1
-  };
-
-  /** \brief A 3D Normal Distribution Transform registration implementation for point cloud data.
+   /** \brief A 3D Normal Distribution Transform registration implementation for point cloud data.
     * \note For more information please see
     * <b>Magnusson, M. (2009). The Three-Dimensional Normal-Distributions Transform —
     * an Efﬁcient Representation for Registration, Surface Analysis, and Loop Detection.
@@ -74,7 +59,7 @@ namespace pcl
     * \author Brian Okorn (Space and Naval Warfare Systems Center Pacific)
     */
   template<typename PointSource, typename PointTarget>
-  class NormalDistributionsTransform : public Registration<PointSource, PointTarget>
+  class NormalDistributionsTransformDouble : public Registration<PointSource, PointTarget>
   {
     protected:
 
@@ -101,17 +86,17 @@ namespace pcl
 
     public:
 
-      using Ptr = shared_ptr< NormalDistributionsTransform<PointSource, PointTarget> >;
-      using ConstPtr = shared_ptr< const NormalDistributionsTransform<PointSource, PointTarget> >;
+      using Ptr = shared_ptr< NormalDistributionsTransformDouble<PointSource, PointTarget> >;
+      using ConstPtr = shared_ptr< const NormalDistributionsTransformDouble<PointSource, PointTarget> >;
 
 
       /** \brief Constructor.
         * Sets \ref outlier_ratio_ to 0.35, \ref step_size_ to 0.05 and \ref resolution_ to 1.0
         */
-      NormalDistributionsTransform ();
+      NormalDistributionsTransformDouble ();
       
       /** \brief Empty destructor */
-      ~NormalDistributionsTransform () {}
+      ~NormalDistributionsTransformDouble () {}
 
       /** \brief Provide a pointer to the input target (e.g., the point cloud that we want to align the input source to).
         * \param[in] cloud the input point cloud target
