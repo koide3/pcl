@@ -102,6 +102,85 @@ TEST (PCL, NormalDistributionsTransform_DIRECT27)
   test_ndt(reg);
 }
 
+#include <pcl/registration/ndt_old.h>
+#include <pcl/registration/impl/ndt_old.hpp>
+#include <pcl/filters/approximate_voxel_grid.h>
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TEST (PCL, NormalDistributionsTransform_Validation)
+{
+  pcl::PointCloud<pcl::PointXYZ>::Ptr target(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr source(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::io::loadPCDFile("/home/koide/catkin_ws/src/fast_gicp/data/251370668.pcd", *target);
+  pcl::io::loadPCDFile("/home/koide/catkin_ws/src/fast_gicp/data/251371071.pcd", *source);
+
+  pcl::ApproximateVoxelGrid<pcl::PointXYZ> voxelgrid;
+  voxelgrid.setLeafSize(0.1f, 0.1f, 0.1f);
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr filtered(new pcl::PointCloud<pcl::PointXYZ>);
+  voxelgrid.setInputCloud(target);
+  voxelgrid.filter(*filtered);
+  *target = *filtered;
+
+  voxelgrid.setInputCloud(source);
+  voxelgrid.filter(*filtered);
+  *source = *filtered;
+
+  pcl::PointCloud<pcl::PointXYZ> aligned;
+
+  {
+    std::ofstream reg_ofs("/tmp/ndt.txt");
+    std::ofstream reg_err_ofs("/tmp/ndt_cerr.txt");
+    std::streambuf* cout_buf = std::cout.rdbuf();
+    std::streambuf* cerr_buf = std::cerr.rdbuf();
+    std::cout.rdbuf(reg_ofs.rdbuf());
+    std::cerr.rdbuf(reg_err_ofs.rdbuf());
+
+    NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
+    ndt.setTransformationEpsilon(1e-5);
+    ndt.setMaximumIterations(50);
+    ndt.setNeighborSearchMethod(NeighborSearchMethod::KDTREE);
+    ndt.setResolution(1.0);
+    ndt.setInputTarget(target);
+    ndt.setInputSource(source);
+    ndt.align(aligned);
+
+    std::cout << std::flush;
+    std::cerr << std::flush;
+    reg_ofs << std::flush;
+    reg_err_ofs << std::flush;
+
+    std::cout.rdbuf(cout_buf);
+    std::cerr.rdbuf(cerr_buf);
+  }
+
+  {
+    std::ofstream reg_ofs("/tmp/ndt_old.txt");
+    std::ofstream reg_err_ofs("/tmp/ndt_old_cerr.txt");
+    std::streambuf* cout_buf = std::cout.rdbuf();
+    std::streambuf* cerr_buf = std::cerr.rdbuf();
+    std::cout.rdbuf(reg_ofs.rdbuf());
+    std::cerr.rdbuf(reg_err_ofs.rdbuf());
+
+    NormalDistributionsTransformOld<pcl::PointXYZ, pcl::PointXYZ> ndt;
+    ndt.setTransformationEpsilon(1e-5);
+    ndt.setMaximumIterations(50);
+    ndt.setResolution(1.0);
+    ndt.setInputTarget(target);
+    ndt.setInputSource(source);
+    ndt.align(aligned);
+
+    std::cout << std::flush;
+    std::cerr << std::flush;
+    reg_ofs << std::flush;
+    reg_err_ofs << std::flush;
+
+    std::cout.rdbuf(cout_buf);
+    std::cerr.rdbuf(cerr_buf);
+  }
+}
+
+
 int
 main (int argc, char** argv)
 {
